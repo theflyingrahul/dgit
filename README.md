@@ -2,7 +2,12 @@
 ### (currently alpha)
 Maintain a truly decentralized software repository with this IPFS wrapper layer for Git VCS.
 
-This wrapper is meant to be compatible with standard git commands wherever possible.
+## What you should know?
+1. IPFS is a decentralized storage system and protocol.
+2. IPFS is transparent and immutable.
+3. IPFS used content-addressing.
+4. This wrapper uses a symmetric encryption algorithm to protect content on the IPFS network.
+5. This wrapper is meant to be compatible with standard git commands (wherever possible).
 
 ## Setup
 	cp dgit.sh /usr/local/bin 			# Copy dgit.sh to /usr/local/bin
@@ -37,3 +42,11 @@ Pulls from a given IPFS content ID and merges the changes to the local copy of t
 Returns operation status.
 
 > Required arguments: `symmetric encryption key used when publishing to IPFS`, `IPFS content ID`
+
+## TODOs
+1. Multi-branch repositories might be problematic as of now, needs fix.
+2. Requires stronger evaluation against less-commonly used git commands.
+3. Tracking IPFS content IDs across pushes.
+
+## Contributing to this project
+Create pull requests with proposed changes!
