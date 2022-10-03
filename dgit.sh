@@ -5,8 +5,8 @@ echo -e "Decentralized-Git-on-IPFS Wrapper"
 stty size | perl -ale 'print "-"x$F[1]'
 
 cmd=$1
-ipfs_cid=$2
-key=$3
+key=$2
+ipfs_cid=$3
 
 rm -rf ~/.tmp
 mkdir ~/.tmp
@@ -29,9 +29,8 @@ function clean_up {
 }
 
 case $cmd in
-    'init')
+    'init') # to migrate an existing/new repository to IPFS system
         friendname=$(pwd | awk -F/ '{print $NF}')
-        key='vcvra-1002'
 
         #(re)initialize git repository
         git init
@@ -44,14 +43,15 @@ case $cmd in
         git push temp
 
         # zip bare repo
-        (cd ~/.tmp/bare/ && zip -q -re ../$friendname.enc .)
-
-        # zip -q -re ~/.tmp/$friendname.enc ~/.tmp/bare/$friendname
+        (cd ~/.tmp/bare/ && zip -q -P $key -re ../$friendname.enc .)
 
         ipfs add ~/.tmp/$friendname.enc
 
         # fn call
         clean_up
+        
+        echo -e "Writing repository tracking information to disk... \n"
+        echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/$friendname/.git/description
 
     ;;
     'clone')
@@ -71,7 +71,6 @@ case $cmd in
         #get prior IPFS CID and friendname from .git/description
         ipfs_cid=$(sed -n 1p .git/description)
         friendname=$(sed -n 2p .git/description)
-        key='vcvra-1002'
 
         #fn call
         get_repo_from_ipfs
@@ -79,14 +78,17 @@ case $cmd in
         echo -e "Pushing repository... \n"
         git remote rm temp
         git remote add temp ~/.tmp/bare/$friendname
-        git push temp
+        git push temp $(git branch --show-current):master
 
         # zip bare repo
-        (cd ~/.tmp/bare/ && zip -q -re ../$friendname.enc .)
+        (cd ~/.tmp/bare/ && zip -q -P $key -re ../$friendname.enc .)
 
-        # zip -q -re ~/.tmp/$friendname.enc ~/.tmp/bare/$friendname
+        # push to IPFS and capture new ipfs_cid
+        ipfs_cid=$(ipfs add ~/.tmp/$friendname.enc | awk '{print $2;}')
 
-        ipfs add ~/.tmp/$friendname.enc 
+        # update .git/desc to reflect new ipfs_cid
+        echo -e "Writing repository tracking information to disk... \n"
+        echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/.git/description
 
         # fn call
         clean_up
@@ -96,16 +98,18 @@ case $cmd in
         #get prior IPFS CID and friendname from .git/description
         ipfs_cid=$(sed -n 1p .git/description)
         friendname=$(sed -n 2p .git/description)
-        key='vcvra-1002'
 
         #fn call
         get_repo_from_ipfs
 
         echo -e "Pulling repository... \n"
-        git pull ~/.tmp/bare/$friendname $friendname
+        git pull ~/.tmp/bare/$friendname
 
         # fn call
         clean_up
     ;;
-
+    *)
+         echo -e "Use as: dgit <command> <symmetric key> <IPFS content ID of repository>"
+         echo -e "where command takes init, clone, push, or pull...\n...and IPFS CID takes a QmHash/bafyHash"
+    ;;
 esac
