@@ -8,9 +8,10 @@ cmd=$1
 ipfs_cid=$2
 key=$3
 
+rm -rf ~/.tmp
+mkdir ~/.tmp
+
 function get_repo_from_ipfs {
-    rm -rf ~/.tmp
-    mkdir ~/.tmp
     echo -e "Fetching repository from IPFS... \n"
     ipfs get $ipfs_cid -o ~/.tmp/$ipfs_cid.enc
 
@@ -28,6 +29,31 @@ function clean_up {
 }
 
 case $cmd in
+    'init')
+        friendname=$(pwd | awk -F/ '{print $NF}')
+        key='vcvra-1002'
+
+        #(re)initialize git repository
+        git init
+        mkdir -p ~/.tmp/bare/$friendname
+        (cd ~/.tmp/bare/$friendname && git init --bare)
+
+        echo -e "Pushing repository... \n"
+        git remote rm temp
+        git remote add temp ~/.tmp/bare/$friendname
+        git push temp
+
+        # zip bare repo
+        (cd ~/.tmp/bare/ && zip -q -re ../$friendname.enc .)
+
+        # zip -q -re ~/.tmp/$friendname.enc ~/.tmp/bare/$friendname
+
+        ipfs add ~/.tmp/$friendname.enc
+
+        # fn call
+        clean_up
+
+    ;;
     'clone')
         #fn call
         get_repo_from_ipfs
@@ -63,7 +89,7 @@ case $cmd in
         ipfs add ~/.tmp/$friendname.enc 
 
         # fn call
-        # clean_up
+        clean_up
 
     ;;
     'pull')
