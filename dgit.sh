@@ -110,6 +110,6 @@ case $cmd in
     ;;
     *)
          echo -e "Use as: dgit <command> <symmetric key> <IPFS content ID of repository>"
-         echo -e "where command takes init, clone, push, or pull...\n...and IPFS CID takes a QmHash/bafyHash"
+         echo -e "where command takes init, clone, push, or pull...\n...and IPFS CID takes a QmHash/bafyHash\n"
     ;;
 esac
