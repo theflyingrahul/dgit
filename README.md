@@ -10,8 +10,9 @@ Maintain a truly decentralized software repository with this IPFS wrapper layer 
 5. This wrapper is meant to be compatible with standard git commands (wherever possible).
 
 ## Setup
-	cp dgit.sh /usr/local/bin 			# Copy dgit.sh to /usr/local/bin
-	chmod +x /usr/local/bin/dgit.sh 	# Make dgit.sh executable
+
+ 1. Copy dgit.sh to /usr/local/bin: `cp dgit.sh /usr/local/bin/dgit`
+ 2. Make dgit.sh executable: `chmod +x /usr/local/bin/dgit`
 
 ## Usage
 Use as: `dgit <command> <symmetric key> <IPFS content ID of repository>`
