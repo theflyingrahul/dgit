@@ -25,7 +25,7 @@ function get_repo_from_ipfs {
 
 function clean_up {
     echo -e "\nCleaning up... \n"
-    # rm -rf ~/.tmp/
+    rm -rf ~/.tmp/
 }
 
 case $cmd in
