@@ -96,7 +96,7 @@ case $cmd in
     ;;
     'pull')
         #get prior IPFS CID and friendname from .git/description
-        ipfs_cid=$(sed -n 1p .git/description)
+        # ipfs_cid=$(sed -n 1p .git/description)
         friendname=$(sed -n 2p .git/description)
 
         #fn call
