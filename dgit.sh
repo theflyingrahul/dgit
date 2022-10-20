@@ -30,6 +30,8 @@ function clean_up {
 
 case $cmd in
     'init') # to migrate an existing/new repository to IPFS system
+        # NOTE: execute init command from inside the repository directory!
+        
         friendname=$(pwd | awk -F/ '{print $NF}')
 
         #(re)initialize git repository
@@ -51,10 +53,12 @@ case $cmd in
         clean_up
         
         echo -e "Writing repository tracking information to disk... \n"
-        echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/$friendname/.git/description
+        echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/.git/description
 
     ;;
     'clone')
+        # NOTE: executing clone will create the repo directory for you. DO NOT create one by yourself!
+        
         #fn call
         get_repo_from_ipfs
 
@@ -68,6 +72,8 @@ case $cmd in
         echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/$friendname/.git/description
     ;;
     'push')
+        # NOTE: execute push from inside the repository directory.
+    
         #get prior IPFS CID and friendname from .git/description
         ipfs_cid=$(sed -n 1p .git/description)
         friendname=$(sed -n 2p .git/description)
@@ -95,6 +101,8 @@ case $cmd in
 
     ;;
     'pull')
+        # NOTE: execute pull from inside the repository directory.
+        
         #get prior IPFS CID and friendname from .git/description
         # ipfs_cid=$(sed -n 1p .git/description)
         friendname=$(sed -n 2p .git/description)
