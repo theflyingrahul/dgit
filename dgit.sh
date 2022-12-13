@@ -1,18 +1,9 @@
-<<<<<<< HEAD
-#/bin/bash
-=======
 #!/bin/bash
->>>>>>> 2ebefeb (Initial dump)
 
 stty size | perl -ale 'print "-"x$F[1]'
 echo -e "Decentralized-Git-on-IPFS Wrapper"
 stty size | perl -ale 'print "-"x$F[1]'
 
-<<<<<<< HEAD
-cmd=$1
-key=$2
-ipfs_cid=$3
-=======
 while getopts c:k:i: flag
 do
     case "${flag}" in
@@ -30,7 +21,6 @@ if [ -z "$key" ]; then
     echo -e "Using default password! \n"
     key="password"
 fi
->>>>>>> 2ebefeb (Initial dump)
 
 rm -rf ~/.tmp
 mkdir ~/.tmp
@@ -57,11 +47,6 @@ case $cmd in
         # NOTE: execute init command from inside the repository directory!
         
         friendname=$(pwd | awk -F/ '{print $NF}')
-<<<<<<< HEAD
-
-        #(re)initialize git repository
-        git init
-=======
                
         # if dir is empty, create README.md (need to push atleast one commit to bare repo?)
         if find -- "$(pwd)" -prune -type d -empty | grep -q '^'; then
@@ -78,21 +63,12 @@ case $cmd in
         git add .
         git commit -m "Initialized new repository"
         
->>>>>>> 2ebefeb (Initial dump)
         mkdir -p ~/.tmp/bare/$friendname
         (cd ~/.tmp/bare/$friendname && git init --bare)
 
         echo -e "Pushing repository... \n"
         git remote rm temp
         git remote add temp ~/.tmp/bare/$friendname
-<<<<<<< HEAD
-        git push temp
-
-        # zip bare repo
-        (cd ~/.tmp/bare/ && zip -q -P $key -re ../$friendname.enc .)
-
-        ipfs add ~/.tmp/$friendname.enc
-=======
         git push -u temp --all
         # git push temp
 
@@ -101,17 +77,13 @@ case $cmd in
 
         # push to IPFS and capture new ipfs_cid
         ipfs_cid=$(ipfs add ~/.tmp/$friendname.enc | awk '{print $2;}')
->>>>>>> 2ebefeb (Initial dump)
 
         # fn call
         clean_up
         
         echo -e "Writing repository tracking information to disk... \n"
         echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/.git/description
-<<<<<<< HEAD
-=======
         echo -e "Updated hash: $ipfs_cid\n"
->>>>>>> 2ebefeb (Initial dump)
 
     ;;
     'clone')
@@ -120,11 +92,7 @@ case $cmd in
         #fn call
         get_repo_from_ipfs
 
-<<<<<<< HEAD
-        echo -e "Cloning repository to $(pwd)... \n"
-=======
         echo -e "Cloning repository... \n"
->>>>>>> 2ebefeb (Initial dump)
         git clone ~/.tmp/bare/$friendname $friendname
         
         # fn call
@@ -149,24 +117,15 @@ case $cmd in
         git push temp $(git branch --show-current):master
 
         # zip bare repo
-<<<<<<< HEAD
-        (cd ~/.tmp/bare/ && zip -q -P $key -re ../$friendname.enc .)
-=======
         (cd ~/.tmp/bare/ && zip -q -P $key -r ../$friendname.enc .)
->>>>>>> 2ebefeb (Initial dump)
 
         # push to IPFS and capture new ipfs_cid
         ipfs_cid=$(ipfs add ~/.tmp/$friendname.enc | awk '{print $2;}')
 
         # update .git/desc to reflect new ipfs_cid
-<<<<<<< HEAD
-        echo -e "Writing repository tracking information to disk... \n"
-        echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/.git/description
-=======
         echo -e "\nWriting repository tracking information to disk... \n"
         echo -e "$ipfs_cid\n$friendname" | cat >$(pwd)/.git/description
         echo -e "Updated hash: $ipfs_cid\n"
->>>>>>> 2ebefeb (Initial dump)
 
         # fn call
         clean_up
@@ -189,14 +148,7 @@ case $cmd in
         clean_up
     ;;
     *)
-<<<<<<< HEAD
-         echo -e "Use as: dgit <command> <symmetric key> <IPFS content ID of repository>"
-         echo -e "where command takes init, clone, push, or pull...\n...and IPFS CID takes a QmHash/bafyHash\n"
-    ;;
-esac
-=======
          echo -e "Use as: dgit -c <command> -k <symmetric key> -i <IPFS content ID of repository>"
          echo -e "where command takes init, clone, push, or pull...\n...and IPFS CID takes a QmHash/bafyHash\n"
     ;;
 esac
->>>>>>> 2ebefeb (Initial dump)
