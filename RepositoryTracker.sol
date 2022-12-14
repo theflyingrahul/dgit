@@ -8,9 +8,48 @@ contract RepositoryTracker is Ownable, AccessControl {
     string private _ipfsAddress;
     string private _friendlyName;
 
+    // TODO: implement pull requests
+    enum PullRequestStatus {
+        OPEN,
+        AUDITING,
+        APPROVED,
+        MERGED,
+        REJECTED
+    }
+    struct PullRequest {
+        address from;
+        string title;
+        string description;
+        string oldBafyHash;
+        string prBafyHash;
+        address assignedTo;
+        string[] labels;
+        PullRequestStatus status;
+    }
+
+    PullRequest[] private _pullRequests;
+
+    // TODO: implement issues
+    enum IssueStatus {
+        OPEN,
+        ASSIGNED,
+        CLOSED
+    }
+
+    struct Issue {
+        address from;
+        string title;
+        string description;
+        string bafyHash;
+        address assignedTo;
+        IssueStatus status;
+    }
+
+    Issue[] private _issues;
+
     // Roles
     bytes32 public constant DEV_ROLE = keccak256("DEV_ROLE");
-    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE");
+    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE"); // TODO: but what does an auditor do?
 
     modifier onlyDeveloper() {
         require(hasRole(DEV_ROLE, msg.sender), "Caller is not a developer!");
@@ -69,21 +108,64 @@ contract RepositoryTracker is Ownable, AccessControl {
         _friendlyName = friendlyName;
     }
 
-    function getIpfsAddress()
-        external
-        view
-        onlyAuditor
-        returns (string memory)
-    {
+    function getIpfsAddress() external view returns (string memory) {
         return _ipfsAddress;
     }
 
-    function getFriendlyName()
-        external
-        view
-        onlyAuditor
-        returns (string memory)
-    {
+    function getFriendlyName() external view returns (string memory) {
         return _friendlyName;
+    }
+
+    // Pull Requests stuff!
+    function getPullRequest(uint256 id)
+        public
+        view
+        returns (PullRequest memory)
+    {
+        return _pullRequests[id-1];
+    }
+
+    function newPullRequest(
+        string calldata title,
+        string calldata description,
+        string calldata oldBafyHash,
+        string calldata prBafyHash
+    ) public onlyAuditor returns (uint256) {
+        string[] memory labels;
+        labels[0] = 'new';
+        PullRequest memory pr = PullRequest(
+            msg.sender,
+            title,
+            description,
+            oldBafyHash,
+            prBafyHash,
+            address(0),
+            labels,
+            PullRequestStatus.OPEN
+        );
+        _pullRequests.push(pr);
+        return _pullRequests.length;
+    }
+
+    // Issue tracker stuff!
+    function getIssue(uint256 id) public view returns (Issue memory) {
+        return _issues[id];
+    }
+
+    function newIssue(
+        string calldata title,
+        string calldata description,
+        string calldata bafyHash
+    ) public onlyAuditor returns (uint256){
+        Issue memory issue = Issue(
+            msg.sender,
+            title,
+            description,
+            bafyHash,
+            address(0),
+            IssueStatus.OPEN
+        );
+        _issues.push(issue);
+        return _issues.length;
     }
 }
