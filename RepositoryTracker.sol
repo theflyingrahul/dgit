@@ -14,7 +14,6 @@ contract RepositoryTracker is Ownable, AccessControl {
         string comment;
     }*/
 
-    // TODO: implement pull requests
     enum PullRequestStatus {
         OPEN,
         AUDITING,
@@ -31,6 +30,7 @@ contract RepositoryTracker is Ownable, AccessControl {
         string oldBafyHash;
         string prBafyHash;
         address assignedTo;
+        // Disabling advanced label features for now, out of gas?
         string[] labels;
         PullRequestStatus status;
     }
@@ -52,6 +52,7 @@ contract RepositoryTracker is Ownable, AccessControl {
         string[] comments;
         string bafyHash;
         address assignedTo;
+        string[] labels;
         IssueStatus status;
     }
 
@@ -126,13 +127,55 @@ contract RepositoryTracker is Ownable, AccessControl {
         return _friendlyName;
     }
 
+    // Label helper functions for PR and Issue Tracker
+
+    function labelAlreadyPresent(string[] storage labels, string calldata label)
+        private
+        onlyDeveloper
+        returns (bool)
+    {
+        for (uint256 i = 0; i < labels.length; i++) {
+            if (
+                keccak256(abi.encodePacked(labels[i])) ==
+                keccak256(abi.encodePacked(label))
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Ah these fns are expensive! Need to optimise!
+    /*function findLabelIndex(string[] storage labels, string calldata label) private onlyDeveloper returns(uint) {
+        uint i = 0;
+        while (keccak256(abi.encodePacked(labels[i])) != keccak256(abi.encodePacked(label))) {
+            i++;
+        }
+        return i;
+    }
+
+    function removeLabel(string[] storage labels, string calldata label) private onlyDeveloper returns (string[] storage) {
+        uint i = findLabelIndex(labels, label);
+        return removeLabelByIndex(labels, i);
+    }
+
+    function removeLabelByIndex(string[] storage labels, uint i) private onlyDeveloper returns (string[] storage) {
+        while (i<labels.length-1) {
+            labels[i] = labels[i+1];
+            i++;
+        }
+        labels.pop();
+
+        return labels;
+    }*/
+
     // Pull Requests stuff!
     function getPullRequest(uint256 id)
         public
         view
         returns (PullRequest memory)
     {
-        return _pullRequests[id - 1];
+        return _pullRequests[id];
     }
 
     function newPullRequest(
@@ -146,12 +189,13 @@ contract RepositoryTracker is Ownable, AccessControl {
         pr.title = title;
         pr.description = description;
         pr.oldBafyHash = oldBafyHash;
-        pr.prBafyHash = pr.prBafyHash;
+        pr.prBafyHash = prBafyHash;
         pr.status = PullRequestStatus.OPEN;
         _pullRequests.push(pr);
         return _pullRequests.length;
     }
 
+    // assuming PR review can be done by both dev'r and auditor
     function assignAuditorToPullRequest(uint256 prId, address auditorAddress)
         public
         onlyDeveloper
@@ -165,6 +209,117 @@ contract RepositoryTracker is Ownable, AccessControl {
     {
         _pullRequests[prId].commentFrom.push(msg.sender);
         _pullRequests[prId].comments.push(comment);
+    }
+
+    // add and remove labels from the PR (assuming only devel can add labels?)
+
+    function addLabelToPullRequest(uint256 prId, string calldata label)
+        public
+        onlyDeveloper
+    {
+        require(
+            !labelAlreadyPresent(_pullRequests[prId].labels, label),
+            "Label is already present!"
+        );
+        _pullRequests[prId].labels.push(label);
+    }
+
+    // broken, need to write an optimised algo for removing string from string[] memory
+    /*function removeLabelFromPullRequest(uint256 prId, string calldata label)
+        public
+        onlyDeveloper
+    {
+        require(
+            labelAlreadyPresent(_pullRequests[prId].labels, label),
+            "Label is absent!"
+        );
+        _pullRequests[prId].labels = removeLabel(
+            _pullRequests[prId].labels,
+            label
+        );
+    }*/
+
+    function updatePullRequestTitle(uint256 prId, string calldata title)
+        public
+    {
+        require(
+            _pullRequests[prId].from == msg.sender,
+            "Caller is not the person who created the pull request!"
+        );
+        _pullRequests[prId].title = title;
+    }
+
+    function updatePullRequestDescription(uint256 prId, string calldata desc)
+        public
+    {
+        require(
+            _pullRequests[prId].from == msg.sender,
+            "Caller is not the person who created the pull request!"
+        );
+        _pullRequests[prId].description = desc;
+    }
+
+    function updatePullRequestOldBafyHash(
+        uint256 prId,
+        string calldata oldBafyHash
+    ) public {
+        require(
+            _pullRequests[prId].from == msg.sender,
+            "Caller is not the person who created the pull request!"
+        );
+        _pullRequests[prId].oldBafyHash = oldBafyHash;
+    }
+
+    function updatePullRequestNewBafyHash(
+        uint256 prId,
+        string calldata prBafyHash
+    ) public {
+        require(
+            _pullRequests[prId].from == msg.sender,
+            "Caller is not the person who created the pull request!"
+        );
+        _pullRequests[prId].prBafyHash = prBafyHash;
+    }
+
+    function approvePullRequest(uint256 prId) public onlyAuditor {
+        require(
+            _pullRequests[prId].assignedTo == msg.sender ||
+                hasRole(DEV_ROLE, msg.sender),
+            "Caller is not the assigned auditor or a developer!"
+        );
+        require(
+            _pullRequests[prId].status != PullRequestStatus.APPROVED,
+            "PR is already approved!"
+        );
+        _pullRequests[prId].status = PullRequestStatus.APPROVED;
+    }
+
+    function rejectPullRequest(uint256 prId) public onlyAuditor {
+        require(
+            _pullRequests[prId].assignedTo == msg.sender ||
+                hasRole(DEV_ROLE, msg.sender),
+            "Caller is not the assigned auditor or a developer!"
+        );
+        require(
+            _pullRequests[prId].status != PullRequestStatus.REJECTED &&
+                _pullRequests[prId].status != PullRequestStatus.MERGED,
+            "PR is already rejected or merged!"
+        );
+        _pullRequests[prId].status = PullRequestStatus.REJECTED;
+    }
+
+    function mergePullRequest(uint256 prId, string calldata bafyHash)
+        public
+        onlyAuditor
+    {
+        require(
+            _pullRequests[prId].status != PullRequestStatus.MERGED &&
+                _pullRequests[prId].status != PullRequestStatus.REJECTED,
+            "PR is rejected or already merged!"
+        );
+        _pullRequests[prId].status = PullRequestStatus.MERGED;
+        //  NOTE: merging needs to be done manually - use dGit
+        _ipfsAddress = bafyHash;
     }
 
     // Issue tracker stuff!
@@ -191,7 +346,14 @@ contract RepositoryTracker is Ownable, AccessControl {
         public
         onlyDeveloper
     {
-        require(hasRole(DEV_ROLE, developerAddress), "developerAddress doesn't have DEV_ROLE!");
+        require(
+            hasRole(DEV_ROLE, developerAddress),
+            "developerAddress doesn't have DEV_ROLE!"
+        );
+        require(
+            _issues[issueId].status == IssueStatus.OPEN,
+            "Issue is already assigned or closed!"
+        );
         _issues[issueId].assignedTo = developerAddress;
         _issues[issueId].status = IssueStatus.ASSIGNED;
     }
@@ -204,10 +366,23 @@ contract RepositoryTracker is Ownable, AccessControl {
         _issues[issueId].comments.push(comment);
     }
 
+    // add and remove labels from the issue (assuming only devel can add labels?)
+
+    function addLabelToIssue(uint256 issueId, string calldata label)
+        public
+        onlyDeveloper
+    {
+        require(
+            !labelAlreadyPresent(_issues[issueId].labels, label),
+            "Label is already present!"
+        );
+        _issues[issueId].labels.push(label);
+    }
+
     function updateIssueTitle(uint256 issueId, string calldata title) public {
         require(
             _issues[issueId].from == msg.sender,
-            "Caller is the person who created the issue!"
+            "Caller is not the person who created the issue!"
         );
         _issues[issueId].title = title;
     }
@@ -217,7 +392,7 @@ contract RepositoryTracker is Ownable, AccessControl {
     {
         require(
             _issues[issueId].from == msg.sender,
-            "Caller is the person who created the issue!"
+            "Caller is not the person who created the issue!"
         );
         _issues[issueId].description = desc;
     }
@@ -227,15 +402,16 @@ contract RepositoryTracker is Ownable, AccessControl {
     {
         require(
             _issues[issueId].from == msg.sender,
-            "Caller is the person who created the issue!"
+            "Caller is not the person who created the issue!"
         );
         _issues[issueId].bafyHash = bafyHash;
     }
 
-    function updateIssueStatus(uint256 issueId, IssueStatus status)
-        public
-        onlyDeveloper
-    {
-        _issues[issueId].status = status;
+    function closeIssue(uint256 issueId) public onlyDeveloper {
+        require(
+            _issues[issueId].status != IssueStatus.CLOSED,
+            "Issue is already closed!"
+        );
+        _issues[issueId].status = IssueStatus.CLOSED;
     }
 }
