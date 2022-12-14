@@ -1,106 +1,64 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.17;
 
-contract RepositoryTracker {
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/access/AccessControl.sol";
+
+contract RepositoryTracker is Ownable, AccessControl {
     string private _ipfsAddress;
     string private _friendlyName;
-    address private _superOwner;
 
-    // collaborators:
-    address[] private _auditors;
-    address[] private _developers;
-    address[] private _owners;
+    // Roles
+    bytes32 public constant DEV_ROLE = keccak256("DEV_ROLE");
+    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE");
 
     constructor(string memory bafyHash, string memory friendlyName) {
-        _superOwner = msg.sender;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
         _ipfsAddress = bafyHash;
         _friendlyName = friendlyName;
     }
 
-    // Ownership stuff
-    function owner() public view virtual returns (address) {
-        return _superOwner;
-    }
-
-    function getSuperOwner() private view returns (address) {
-        return _superOwner;
-    }
-
-    function isOwner() private view returns (bool) {
-        for (uint i = 0; i < _owners.length; i++) {
-            if (_owners[i] == msg.sender) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function isDeveloper() private view returns (bool) {
-        for (uint i = 0; i < _developers.length; i++) {
-            if (_developers[i] == msg.sender) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function isAuditor() private view returns (bool) {
-        for (uint i = 0; i < _auditors.length; i++) {
-            if (_auditors[i] == msg.sender) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    modifier onlySuperOwner() {
-        require(
-            getSuperOwner() == msg.sender,
-            "Super ownership Assertion: Caller of the function is not the superowner."
-        );
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(
-            isOwner(),
-            "Ownership Assertion: Caller of the function is not an owner."
-        );
-        _;
-    }
-
     modifier onlyDeveloper() {
-        require(
-            isDeveloper(),
-            "Developer Assertion: Caller of the function is not a developer."
-        );
+        require(hasRole(DEV_ROLE, msg.sender), "Caller is not a developer!");
         _;
     }
 
     modifier onlyAuditor() {
-        require(
-            isAuditor(),
-            "Auditor Assertion: Caller of the function is not an auditor."
-        );
+        require(hasRole(AUDIT_ROLE, msg.sender), "Caller is not an auditor!");
         _;
     }
 
-    function transferOwnership(address newOwner) public virtual onlySuperOwner {
-        _superOwner = newOwner;
+    function addDeveloper(address memory devAddress) external onlyOwner {
+        _grantRole(DEV_ROLE, devAddress);
+    }
+
+    function addDevelopers(address[] memory devAddresses) external onlyOwner {
+        for (uint256 i = 0; i < devAddresses.length; i++) {
+            _grantRole(DEV_ROLE, devAddresses[i]);
+        }
+    }
+
+    function addAuditor(address memory auditAddress) external onlyOwner {
+        _grantRole(AUDIT_ROLE, auditAddress);
+    }
+
+    function addAuditors(address[] memory auditAddresses) external onlyOwner {
+        for (uint256 i = 0; i < auditAddresses.length; i++) {
+            _grantRole(AUDIT_ROLE, auditAddresses[i]);
+        }
     }
 
     // End ownership stuff!
-    // TODO: extend ownership to contributors or other relations
-    // TODO: migrate to OpenZeppelin Ownable class
 
-    function setIpfsAddress(string calldata bafyHash) public onlySuperOwner {
+    function setIpfsAddress(string calldata bafyHash) public {
         _ipfsAddress = bafyHash;
     }
 
-    function setFriendlyName(
-        string calldata friendlyName
-    ) public onlySuperOwner {
+    function setFriendlyName(string calldata friendlyName)
+        public
+        onlySuperOwner
+    {
         _friendlyName = friendlyName;
     }
 
