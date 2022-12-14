@@ -2,4 +2,5 @@ test-repo/
 web3/
 .ipynb_checkpoints/
 .tmp/
+test/
 
