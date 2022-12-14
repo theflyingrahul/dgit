@@ -30,14 +30,12 @@ contract RepositoryTracker is Ownable, AccessControl {
         string oldBafyHash;
         string prBafyHash;
         address assignedTo;
-        // Disabling advanced label features for now, out of gas?
         string[] labels;
         PullRequestStatus status;
     }
 
     PullRequest[] private _pullRequests;
 
-    // TODO: implement issues
     enum IssueStatus {
         OPEN,
         ASSIGNED,
