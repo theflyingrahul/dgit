@@ -26,7 +26,6 @@ contract RepositoryTracker is Ownable, AccessControl {
         address from;
         string title;
         string description;
-        // Comment[] comments'
         address[] commentFrom;
         string[] comments;
         string oldBafyHash;
@@ -49,7 +48,6 @@ contract RepositoryTracker is Ownable, AccessControl {
         address from;
         string title;
         string description;
-        // Comment[] comments;
         address[] commentFrom;
         string[] comments;
         string bafyHash;
@@ -143,30 +141,13 @@ contract RepositoryTracker is Ownable, AccessControl {
         string calldata oldBafyHash,
         string calldata prBafyHash
     ) public onlyAuditor returns (uint256) {
-        string[] memory labels;
-        labels[0] = "new";
-
-        address[] memory commentFrom;
-        commentFrom[0] = msg.sender;
-
-        string[] memory comments;
-        comments[0] = "Pull request created";
-
-        // Comment[] memory comments;
-        // comments[0] = Comment(msg.sender, "Pull request created");
-        PullRequest memory pr = PullRequest(
-            msg.sender,
-            title,
-            description,
-            // comments,
-            commentFrom,
-            comments,
-            oldBafyHash,
-            prBafyHash,
-            address(0),
-            labels,
-            PullRequestStatus.OPEN
-        );
+        PullRequest memory pr;
+        pr.from = msg.sender;
+        pr.title = title;
+        pr.description = description;
+        pr.oldBafyHash = oldBafyHash;
+        pr.prBafyHash = pr.prBafyHash;
+        pr.status = PullRequestStatus.OPEN;
         _pullRequests.push(pr);
         return _pullRequests.length;
     }
@@ -176,6 +157,14 @@ contract RepositoryTracker is Ownable, AccessControl {
         onlyDeveloper
     {
         _pullRequests[prId].assignedTo = auditorAddress;
+    }
+
+    function commentOnPullRequest(uint256 prId, string calldata comment)
+        public
+        onlyAuditor
+    {
+        _pullRequests[prId].commentFrom.push(msg.sender);
+        _pullRequests[prId].comments.push(comment);
     }
 
     // Issue tracker stuff!
@@ -188,35 +177,22 @@ contract RepositoryTracker is Ownable, AccessControl {
         string calldata description,
         string calldata bafyHash
     ) public onlyAuditor returns (uint256) {
-        // Comment[] memory comments;
-        // comments[0] = Comment(msg.sender, "Issue created");
-
-        address[] memory commentFrom;
-        commentFrom[0] = msg.sender;
-
-        string[] memory comments;
-        comments[0] = "Pull request created";
-        
-        Issue memory issue = Issue(
-            msg.sender,
-            title,
-            description,
-            // comments,
-            commentFrom,
-            comments,
-            bafyHash,
-            address(0),
-            IssueStatus.OPEN
-        );
+        Issue memory issue;
+        issue.from = msg.sender;
+        issue.title = title;
+        issue.description = description;
+        issue.bafyHash = bafyHash;
+        issue.status = IssueStatus.OPEN;
         _issues.push(issue);
         return _issues.length;
     }
 
-    function assignAuditorToIssue(uint256 issueId, address auditorAddress)
+    function assignDeveloperToIssue(uint256 issueId, address developerAddress)
         public
         onlyDeveloper
     {
-        _issues[issueId].assignedTo = auditorAddress;
+        require(hasRole(DEV_ROLE, developerAddress), "developerAddress doesn't have DEV_ROLE!");
+        _issues[issueId].assignedTo = developerAddress;
         _issues[issueId].status = IssueStatus.ASSIGNED;
     }
 
@@ -236,7 +212,9 @@ contract RepositoryTracker is Ownable, AccessControl {
         _issues[issueId].title = title;
     }
 
-    function updateIssueDescription(uint256 issueId, string calldata desc) public {
+    function updateIssueDescription(uint256 issueId, string calldata desc)
+        public
+    {
         require(
             _issues[issueId].from == msg.sender,
             "Caller is the person who created the issue!"
@@ -244,7 +222,9 @@ contract RepositoryTracker is Ownable, AccessControl {
         _issues[issueId].description = desc;
     }
 
-    function updateIssueBafyHash(uint256 issueId, string calldata bafyHash) public {
+    function updateIssueBafyHash(uint256 issueId, string calldata bafyHash)
+        public
+    {
         require(
             _issues[issueId].from == msg.sender,
             "Caller is the person who created the issue!"
