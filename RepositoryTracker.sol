@@ -224,7 +224,7 @@ contract RepositoryTracker is Ownable, AccessControl {
         _pullRequests[prId].labels.push(label);
     }
 
-    // broken, need to write an optimised algo for removing string from string[] memory
+    // broken, need to write an optimised algo for removing string from string[] storage
     /*function removeLabelFromPullRequest(uint256 prId, string calldata label)
         public
         onlyDeveloper
