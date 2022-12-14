@@ -8,6 +8,12 @@ contract RepositoryTracker is Ownable, AccessControl {
     string private _ipfsAddress;
     string private _friendlyName;
 
+    /* Nested structs don't work in Solidity as of now, going for a ramshackle soln.
+    struct Comment {
+        address from;
+        string comment;
+    }*/
+
     // TODO: implement pull requests
     enum PullRequestStatus {
         OPEN,
@@ -20,6 +26,9 @@ contract RepositoryTracker is Ownable, AccessControl {
         address from;
         string title;
         string description;
+        // Comment[] comments'
+        address[] commentFrom;
+        string[] comments;
         string oldBafyHash;
         string prBafyHash;
         address assignedTo;
@@ -40,6 +49,9 @@ contract RepositoryTracker is Ownable, AccessControl {
         address from;
         string title;
         string description;
+        // Comment[] comments;
+        address[] commentFrom;
+        string[] comments;
         string bafyHash;
         address assignedTo;
         IssueStatus status;
@@ -122,7 +134,7 @@ contract RepositoryTracker is Ownable, AccessControl {
         view
         returns (PullRequest memory)
     {
-        return _pullRequests[id-1];
+        return _pullRequests[id - 1];
     }
 
     function newPullRequest(
@@ -132,11 +144,23 @@ contract RepositoryTracker is Ownable, AccessControl {
         string calldata prBafyHash
     ) public onlyAuditor returns (uint256) {
         string[] memory labels;
-        labels[0] = 'new';
+        labels[0] = "new";
+
+        address[] memory commentFrom;
+        commentFrom[0] = msg.sender;
+
+        string[] memory comments;
+        comments[0] = "Pull request created";
+
+        // Comment[] memory comments;
+        // comments[0] = Comment(msg.sender, "Pull request created");
         PullRequest memory pr = PullRequest(
             msg.sender,
             title,
             description,
+            // comments,
+            commentFrom,
+            comments,
             oldBafyHash,
             prBafyHash,
             address(0),
@@ -145,6 +169,13 @@ contract RepositoryTracker is Ownable, AccessControl {
         );
         _pullRequests.push(pr);
         return _pullRequests.length;
+    }
+
+    function assignAuditorToPullRequest(uint256 prId, address auditorAddress)
+        public
+        onlyDeveloper
+    {
+        _pullRequests[prId].assignedTo = auditorAddress;
     }
 
     // Issue tracker stuff!
@@ -156,16 +187,75 @@ contract RepositoryTracker is Ownable, AccessControl {
         string calldata title,
         string calldata description,
         string calldata bafyHash
-    ) public onlyAuditor returns (uint256){
+    ) public onlyAuditor returns (uint256) {
+        // Comment[] memory comments;
+        // comments[0] = Comment(msg.sender, "Issue created");
+
+        address[] memory commentFrom;
+        commentFrom[0] = msg.sender;
+
+        string[] memory comments;
+        comments[0] = "Pull request created";
+        
         Issue memory issue = Issue(
             msg.sender,
             title,
             description,
+            // comments,
+            commentFrom,
+            comments,
             bafyHash,
             address(0),
             IssueStatus.OPEN
         );
         _issues.push(issue);
         return _issues.length;
+    }
+
+    function assignAuditorToIssue(uint256 issueId, address auditorAddress)
+        public
+        onlyDeveloper
+    {
+        _issues[issueId].assignedTo = auditorAddress;
+        _issues[issueId].status = IssueStatus.ASSIGNED;
+    }
+
+    function commentOnIssue(uint256 issueId, string calldata comment)
+        public
+        onlyAuditor
+    {
+        _issues[issueId].commentFrom.push(msg.sender);
+        _issues[issueId].comments.push(comment);
+    }
+
+    function updateIssueTitle(uint256 issueId, string calldata title) public {
+        require(
+            _issues[issueId].from == msg.sender,
+            "Caller is the person who created the issue!"
+        );
+        _issues[issueId].title = title;
+    }
+
+    function updateIssueDescription(uint256 issueId, string calldata desc) public {
+        require(
+            _issues[issueId].from == msg.sender,
+            "Caller is the person who created the issue!"
+        );
+        _issues[issueId].description = desc;
+    }
+
+    function updateIssueBafyHash(uint256 issueId, string calldata bafyHash) public {
+        require(
+            _issues[issueId].from == msg.sender,
+            "Caller is the person who created the issue!"
+        );
+        _issues[issueId].bafyHash = bafyHash;
+    }
+
+    function updateIssueStatus(uint256 issueId, IssueStatus status)
+        public
+        onlyDeveloper
+    {
+        _issues[issueId].status = status;
     }
 }
