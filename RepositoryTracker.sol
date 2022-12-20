@@ -58,7 +58,7 @@ contract RepositoryTracker is Ownable, AccessControl {
 
     // Roles
     bytes32 public constant DEV_ROLE = keccak256("DEV_ROLE");
-    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE"); // TODO: but what does an auditor do?
+    bytes32 public constant AUDIT_ROLE = keccak256("AUDIT_ROLE");
 
     modifier onlyDeveloper() {
         require(hasRole(DEV_ROLE, msg.sender), "Caller is not a developer!");
@@ -198,6 +198,9 @@ contract RepositoryTracker is Ownable, AccessControl {
         public
         onlyDeveloper
     {
+    // TODO: Check membership of auditor address
+    // TODO: implement PullRequestStatus.AUDITING
+    // TODO: Check if not already assigned.
         _pullRequests[prId].assignedTo = auditorAddress;
     }
 
