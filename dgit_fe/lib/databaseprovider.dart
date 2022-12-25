@@ -21,11 +21,16 @@ class DatabaseProvider {
 
   Future<List<Contract>> getContractList() async {
     await openDatabase();
-    final List<Map<String, dynamic>> maps = await _database.query('contracts');
-
-
-    // implement pull dGit DS from Solidity
-
+    late List<Map<String, dynamic>> maps;
+    await _database.query('contracts').then((value) => (){
+      print(value.toString());
+      maps = value;
+      // implement pull dGit DS from Solidity
+      maps.forEach((map) {
+        map.values.forEach((v) => print("contractId: $v"));
+        
+      });
+    }());
 
     return List.generate(maps.length, (i) {
       return Contract(id: maps[i]['id']);

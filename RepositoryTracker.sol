@@ -75,11 +75,15 @@ contract RepositoryTracker is Ownable, AccessControl {
 
     function addDeveloper(address devAddress) public onlyOwner {
         _grantRole(DEV_ROLE, devAddress);
+        // Assuming dev can audit too
+        _grantRole(AUDIT_ROLE, auditAddress);
     }
 
     function addDevelopers(address[] memory devAddresses) public onlyOwner {
         for (uint256 i = 0; i < devAddresses.length; i++) {
             _grantRole(DEV_ROLE, devAddresses[i]);
+            // Assuming dev can audit too
+            _grantRole(AUDIT_ROLE, auditAddresses[i]);
         }
     }
 
@@ -198,10 +202,20 @@ contract RepositoryTracker is Ownable, AccessControl {
         public
         onlyDeveloper
     {
-    // TODO: Check membership of auditor address
-    // TODO: implement PullRequestStatus.AUDITING
-    // TODO: Check if not already assigned.
+        require(
+                hasRole(AUDIT_ROLE, auditorAddress) || hasRole(DEV_ROLE, auditorAddress),
+            "Requested address is not the assigned auditor or a developer!"
+        );
+        require(
+            _pullRequests[prId].status != PullRequestStatus.AUDITING,
+            "PR is already assigned to an auditor!"
+        );
+        require(
+            _pullRequests[prId].status != PullRequestStatus.APPROVED,
+            "PR is already approved!"
+        );
         _pullRequests[prId].assignedTo = auditorAddress;
+        _pullRequests[prId].status = PullRequestStatus.AUDITING;
     }
 
     function commentOnPullRequest(uint256 prId, string calldata comment)
