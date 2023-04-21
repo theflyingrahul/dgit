@@ -76,14 +76,14 @@ contract RepositoryTracker is Ownable, AccessControl {
     function addDeveloper(address devAddress) public onlyOwner {
         _grantRole(DEV_ROLE, devAddress);
         // Assuming dev can audit too
-        _grantRole(AUDIT_ROLE, auditAddress);
+        _grantRole(AUDIT_ROLE, devAddress);
     }
 
     function addDevelopers(address[] memory devAddresses) public onlyOwner {
         for (uint256 i = 0; i < devAddresses.length; i++) {
             _grantRole(DEV_ROLE, devAddresses[i]);
             // Assuming dev can audit too
-            _grantRole(AUDIT_ROLE, auditAddresses[i]);
+            _grantRole(AUDIT_ROLE, devAddresses[i]);
         }
     }
 
